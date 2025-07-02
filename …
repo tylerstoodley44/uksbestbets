@@ -1,0 +1,108 @@
+/online-casino
+├── backend/
+│   ├── app.js
+│   ├── routes/
+│   ├── controllers/
+│   ├── models/
+│   └── utils/
+├── frontend/
+│   ├── public/
+│   ├── src/
+│   └── package.json
+└── README.md
+const express = require('express');
+const app = express();
+const cors = require('cors');
+const userRoutes = require('./routes/userRoutes');
+const gameRoutes = require('./routes/gameRoutes');
+
+app.use(cors());
+app.use(express.json());
+
+app.use('/api/users', userRoutes);
+app.use('/api/games', gameRoutes);
+
+app.listen(5000, () => console.log('Casino backend running on port 5000'));
+const express = require('express');
+const router = express.Router();
+const { register, login } = require('../controllers/userController');
+
+router.post('/register', register);
+router.post('/login', login);
+
+module.exports = router;
+const jwt = require('jsonwebtoken');
+const users = []; // Use a real DB in production
+
+exports.register = (req, res) => {
+    const { username, password } = req.body;
+    users.push({ username, password });
+    res.json({ msg: 'Registered' });
+};
+
+exports.login = (req, res) => {
+    const { username, password } = req.body;
+    const user = users.find(u => u.username === username && u.password === password);
+    if (!user) return res.status(401).json({ msg: 'Invalid credentials' });
+    const token = jwt.sign({ username }, 'secret_key');
+    res.json({ token });
+};
+const express = require('express');
+const router = express.Router();
+const { playSlot } = require('../controllers/gameController');
+
+router.post('/slot', playSlot);
+
+module.exports = router;
+const crypto = require('crypto');
+
+exports.playSlot = (req, res) => {
+    const symbols = ['🍒', '🔔', '🍋', '💎', '7️⃣'];
+    const roll = () => symbols[crypto.randomInt(symbols.length)];
+
+    const result = [roll(), roll(), roll()];
+    const win = (new Set(result).size === 1);
+
+    res.json({ result, win });
+};
+const stripe = require('stripe')('your_stripe_secret');
+
+app.post('/create-payment-intent', async (req, res) => {
+    const paymentIntent = await stripe.paymentIntents.create({
+        amount: 5000,
+        currency: 'usd',
+        payment_method_types: ['card'],
+    });
+    res.send({ clientSecret: paymentIntent.client_secret });
+});
+import React, { useState } from 'react';
+import axios from 'axios';
+
+export default function Slot() {
+    const [result, setResult] = useState([]);
+    const [win, setWin] = useState(null);
+
+    const play = async () => {
+        const res = await axios.post('http://localhost:5000/api/games/slot');
+        setResult(res.data.result);
+        setWin(res.data.win);
+    };
+
+    return (
+        <div>
+            <h2>Slot Machine</h2>
+            <button onClick={play}>Spin</button>
+            <div style={{ fontSize: '2rem' }}>{result.join(' ')}</div>
+            {win !== null && <p>{win ? 'You Win!' : 'Try Again'}</p>}
+        </div>
+    );
+}
+// Use SHA-256 of server + client seeds to generate outcomes
+npm install prisma --save-dev
+npx prisma init
+model User {
+  id       Int    @id @default(autoincrement())
+  username String @unique
+  password String
+  balance  Int    @default(0)
+}
